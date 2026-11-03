@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#08091c">
+  <title>Infinity IPTV - Add Playlist</title>
+  <style>
+    * { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
+    body { margin: 0; min-height: 100vh; font-family: -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; color: #fff;
+      background: radial-gradient(circle at 10% 0%, #2a1f63 0%, rgba(42,31,99,0) 55%), radial-gradient(circle at 100% 100%, #10304f 0%, rgba(16,48,79,0) 50%), #08091c; }
+    .wrap { max-width: 480px; margin: 0 auto; padding: 22px 18px 36px; }
+    .logo { display: flex; align-items: center; margin-bottom: 26px; font-size: 19px; font-weight: 700; letter-spacing: 2px; }
+    .logo img { height: 34px; width: auto; margin-right: 10px; }
+    .logo b { color: #b45cff; font-weight: 800; margin-left: 8px; }
+    h1 { font-size: 27px; font-weight: 800; margin: 0 0 6px; }
+    .sub { color: #9aa6c4; font-size: 15px; margin: 0 0 22px; line-height: 1.5; }
+    .tabs { display: flex; margin-bottom: 20px; }
+    .tab { flex: 1; height: 48px; border-radius: 12px; background: rgba(255,255,255,.06); color: #c4cbe0; font-size: 15px; font-family: inherit;
+      border: 0; margin-right: 10px; cursor: pointer; }
+    .tab:last-child { margin-right: 0; }
+    .tab.on { box-shadow: inset 0 0 0 2px #2fb8ff; color: #2fb8ff; font-weight: 600; }
+    label { display: block; font-size: 13px; color: #9aa6c4; margin: 0 0 6px 2px; }
+    input { width: 100%; height: 50px; border-radius: 12px; border: 2px solid rgba(255,255,255,.1); background: rgba(255,255,255,.06);
+      color: #fff; font-size: 16px; padding: 0 14px; margin-bottom: 14px; outline: 0; font-family: inherit; }
+    input:focus { border-color: #2fb8ff; box-shadow: 0 0 0 3px rgba(47,184,255,.25); background: rgba(47,184,255,.08); }
+    .send { width: 100%; height: 54px; margin-top: 8px; border: 0; border-radius: 14px; font-size: 17px; font-weight: 700; color: #fff; cursor: pointer;
+      background: linear-gradient(135deg, #8a5cff, #2fb8ff); box-shadow: 0 8px 24px rgba(47,184,255,.3); font-family: inherit; }
+    .send:disabled { opacity: .6; }
+    .msg { margin-top: 18px; padding: 14px 16px; border-radius: 12px; font-size: 15px; line-height: 1.5; display: none; }
+    .msg.ok { display: block; background: rgba(31,200,160,.15); border: 1px solid rgba(31,200,160,.4); }
+    .msg.err { display: block; background: rgba(229,57,53,.15); border: 1px solid rgba(229,57,53,.4); }
+    .note { margin-top: 26px; color: #6f7a96; font-size: 12px; line-height: 1.6; text-align: center; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="logo"><img src="logo-mark.png" alt="">INFINITY<b>IPTV</b></div>
+
+    <div id="nokey" class="hidden">
+      <h1>Scan the QR code</h1>
+      <p class="sub">Open <b>Add New Playlist</b> in the Infinity IPTV app on your TV and scan the QR code shown there with your phone camera.</p>
+    </div>
+
+    <form id="form" class="hidden" autocomplete="off">
+      <h1>Add New Playlist</h1>
+      <p class="sub">Enter the details from your IPTV provider and press <b>Send to TV</b>. Your TV adds the playlist automatically.</p>
+      <div class="tabs">
+        <button type="button" class="tab on" data-t="xtream">Xtream Codes</button>
+        <button type="button" class="tab" data-t="m3u">M3U URL</button>
+      </div>
+      <label>Playlist name</label>
+      <input name="name" placeholder="e.g. My IPTV (optional)">
+      <div class="f-xt">
+        <label>Username</label>
+        <input name="user" autocapitalize="off" autocorrect="off" spellcheck="false">
+        <label>Password</label>
+        <input name="pass" type="password" autocapitalize="off" autocorrect="off">
+        <label>Server URL</label>
+        <input name="server" placeholder="http://example.com:8080" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false">
+      </div>
+      <div class="f-m3u hidden">
+        <label>M3U playlist URL</label>
+        <input name="url" placeholder="http://example.com/get.php?username=...&password=...&type=m3u_plus" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false">
+      </div>
+      <button class="send" type="submit" id="send">Send to TV</button>
+      <div class="msg" id="msg"></div>
+    </form>
+
+    <p class="note">Your details are encrypted on this phone before they are sent, and only your TV can read them.<br>
+      Infinity IPTV is a media player and does not provide any content.</p>
+  </div>
+
+  <script src="wcrypt.js"></script>
+  <script>
+  (function () {
+    var p = {};
+    location.hash.replace(/^#/, '').split('&').forEach(function (kv) {
+      var i = kv.indexOf('=');
+      if (i > 0) p[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1));
+    });
+    var relay = (p.r || 'https://ntfy.sh').replace(/\/+$/, '');
+    var form = document.getElementById('form'), msg = document.getElementById('msg'), btn = document.getElementById('send');
+    if (!p.k || !p.s) { document.getElementById('nokey').classList.remove('hidden'); return; }
+    form.classList.remove('hidden');
+
+    var type = 'xtream';
+    [].forEach.call(document.querySelectorAll('.tab'), function (t) {
+      t.onclick = function () {
+        type = t.getAttribute('data-t');
+        [].forEach.call(document.querySelectorAll('.tab'), function (x) { x.classList.toggle('on', x === t); });
+        form.querySelector('.f-xt').classList.toggle('hidden', type !== 'xtream');
+        form.querySelector('.f-m3u').classList.toggle('hidden', type !== 'm3u');
+      };
+    });
+
+    function show(cls, text) { msg.className = 'msg ' + cls; msg.textContent = text; }
+    function v(n) { return form.elements[n].value.trim(); }
+
+    form.onsubmit = function (e) {
+      e.preventDefault();
+      var data = { type: type, name: v('name') };
+      if (type === 'xtream') {
+        data.server = v('server'); data.user = v('user'); data.pass = v('pass');
+        if (!data.server || !data.user || !data.pass) { show('err', 'Please fill in username, password and server URL.'); return; }
+      } else {
+        data.url = v('url');
+        if (!data.url) { show('err', 'Please enter the M3U URL.'); return; }
+      }
+      btn.disabled = true; btn.textContent = 'Sending…'; msg.className = 'msg';
+      fetch(relay + '/' + encodeURIComponent(p.k), { method: 'POST', body: WCrypt.encrypt(p.s, data) })
+        .then(function (r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          show('ok', '✓ Sent! Look at your TV - the playlist is being added now.');
+          btn.textContent = 'Sent';
+        })
+        .catch(function (err) {
+          show('err', 'Could not send (' + err.message + '). Make sure your phone is connected to the internet and try again.');
+          btn.disabled = false; btn.textContent = 'Send to TV';
+        });
+    };
+  })();
+  </script>
+</body>
+</html>

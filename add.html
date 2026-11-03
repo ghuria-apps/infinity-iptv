@@ -97,7 +97,11 @@
     });
 
     function show(cls, text) { msg.className = 'msg ' + cls; msg.textContent = text; }
-    function v(n) { return form.elements[n].value.trim(); }
+    // Remove invisible characters; addresses never contain spaces (some keyboards add one after '.' or ':')
+    function v(n) {
+      var s = form.elements[n].value.replace(/[​-‏⁠﻿]/g, '').replace(/ /g, ' ').trim();
+      return n === 'server' || n === 'url' ? s.replace(/\s+/g, '') : s;
+    }
 
     form.onsubmit = function (e) {
       e.preventDefault();

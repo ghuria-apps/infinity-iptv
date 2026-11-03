@@ -117,8 +117,9 @@
       fetch(relay + '/' + encodeURIComponent(p.k), { method: 'POST', body: WCrypt.encrypt(p.s, data) })
         .then(function (r) {
           if (!r.ok) throw new Error('HTTP ' + r.status);
-          show('ok', '✓ Sent! Look at your TV - the playlist is being added now.');
+          show('ok', '✓ Sent! Look at your TV - the playlist is being added now. If the TV shows an error, correct the details here and press Send again.');
           btn.textContent = 'Sent';
+          setTimeout(function () { btn.disabled = false; btn.textContent = 'Send again'; }, 3000);
         })
         .catch(function (err) {
           show('err', 'Could not send (' + err.message + '). Make sure your phone is connected to the internet and try again.');

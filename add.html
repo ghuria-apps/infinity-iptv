@@ -28,6 +28,14 @@
     .send { width: 100%; height: 54px; margin-top: 8px; border: 0; border-radius: 14px; font-size: 17px; font-weight: 700; color: #fff; cursor: pointer;
       background: linear-gradient(135deg, #8a5cff, #2fb8ff); box-shadow: 0 8px 24px rgba(47,184,255,.3); font-family: inherit; }
     .send:disabled { opacity: .6; }
+    /* loading indicator while sending / waiting for the TV */
+    .busy { display: none; align-items: center; margin-top: 18px; padding: 14px 16px; border-radius: 12px; font-size: 15px; line-height: 1.5;
+      background: rgba(47,184,255,.1); border: 1px solid rgba(47,184,255,.35); }
+    .busy.on { display: flex; }
+    .spin { width: 26px; height: 26px; flex-shrink: 0; margin-right: 12px; border-radius: 50%; border: 3px solid rgba(255,255,255,.2);
+      border-top-color: #2fb8ff; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .msg b { display: block; margin-bottom: 4px; }
     .msg { margin-top: 18px; padding: 14px 16px; border-radius: 12px; font-size: 15px; line-height: 1.5; display: none; }
     .msg.ok { display: block; background: rgba(31,200,160,.15); border: 1px solid rgba(31,200,160,.4); }
     .msg.err { display: block; background: rgba(229,57,53,.15); border: 1px solid rgba(229,57,53,.4); }
@@ -66,6 +74,7 @@
         <input name="url" placeholder="http://example.com/get.php?username=...&password=...&type=m3u_plus" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false">
       </div>
       <button class="send" type="submit" id="send">Send to TV</button>
+      <div class="busy" id="busy"><span class="spin"></span><span id="busyText">Sending…</span></div>
       <div class="msg" id="msg"></div>
     </form>
 
@@ -96,10 +105,42 @@
       };
     });
 
-    function show(cls, text) { msg.className = 'msg ' + cls; msg.textContent = text; }
+    var busy = document.getElementById('busy'), busyText = document.getElementById('busyText'), seen = {}, attempt = 0;
+    function show(cls, text, title) {
+      msg.className = 'msg ' + cls; msg.textContent = text;
+      if (title) { var b = document.createElement('b'); b.textContent = title; msg.insertBefore(b, msg.firstChild); }
+    }
+    function setBusy(text) { busy.className = text ? 'busy on' : 'busy'; if (text) busyText.textContent = text; }
+
+    // Wait for the TV's answer ("<topic>-r", encrypted with the same key): connected, or which detail is wrong
+    function waitForTv(since, my) {
+      var tries = 0;
+      function done(ok) { setBusy(''); btn.disabled = ok; btn.textContent = ok ? 'Added ✓' : 'Send again'; }
+      (function poll() {
+        if (my !== attempt) return; // a newer send started
+        if (++tries > 45) { done(false); show('ok', 'Sent. Look at your TV to see if the playlist was added.'); return; }
+        fetch(relay + '/' + encodeURIComponent(p.k + '-r') + '/json?poll=1&since=' + since)
+          .then(function (r) { return r.text(); })
+          .then(function (text) {
+            if (my !== attempt) return;
+            var res = null;
+            text.split('\n').forEach(function (line) {
+              var m;
+              try { m = JSON.parse(line); } catch (e) { return; }
+              if (!m || m.event !== 'message' || seen[m.id]) return;
+              seen[m.id] = 1;
+              try { res = WCrypt.decrypt(p.s, m.message); } catch (e) {}
+            });
+            if (!res) { setTimeout(poll, 2000); return; }
+            if (res.ok) { done(true); show('ok', 'The playlist was added to your TV. Enjoy watching!', '✓ Connected'); }
+            else { done(false); show('err', (res.msg || '') + ' Correct the details above and press Send again.', res.title || 'The details are not correct'); }
+          })
+          .catch(function () { setTimeout(poll, 3000); });
+      })();
+    }
     // Remove invisible characters; addresses never contain spaces (some keyboards add one after '.' or ':')
     function v(n) {
-      var s = form.elements[n].value.replace(/[​-‏⁠﻿]/g, '').replace(/ /g, ' ').trim();
+      var s = form.elements[n].value.replace(/[\u200B-\u200F\u2060\uFEFF]/g, '').replace(/\u00A0/g, ' ').trim();
       return n === 'server' || n === 'url' ? s.replace(/\s+/g, '') : s;
     }
 
@@ -113,15 +154,17 @@
         data.url = v('url');
         if (!data.url) { show('err', 'Please enter the M3U URL.'); return; }
       }
-      btn.disabled = true; btn.textContent = 'Sending…'; msg.className = 'msg';
+      var my = ++attempt, since = Math.floor(Date.now() / 1000) - 2;
+      btn.disabled = true; btn.textContent = 'Sending…'; msg.className = 'msg'; setBusy('Sending to your TV…');
       fetch(relay + '/' + encodeURIComponent(p.k), { method: 'POST', body: WCrypt.encrypt(p.s, data) })
         .then(function (r) {
           if (!r.ok) throw new Error('HTTP ' + r.status);
-          show('ok', '✓ Sent! Look at your TV - the playlist is being added now. If the TV shows an error, correct the details here and press Send again.');
-          btn.textContent = 'Sent';
-          setTimeout(function () { btn.disabled = false; btn.textContent = 'Send again'; }, 3000);
+          btn.textContent = 'Connecting…';
+          setBusy('Sent! Your TV is connecting to the playlist…');
+          waitForTv(since, my);
         })
         .catch(function (err) {
+          setBusy('');
           show('err', 'Could not send (' + err.message + '). Make sure your phone is connected to the internet and try again.');
           btn.disabled = false; btn.textContent = 'Send to TV';
         });

@@ -1,0 +1,17 @@
+#EXTM3U
+#EXTINF:-1 tvg-id="" tvg-logo="https://ghuria-apps.github.io/infinity-iptv/logo-mark.png" group-title="Test Channels",Akamai Live Test Stream
+https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8
+#EXTINF:-1 tvg-id="" tvg-logo="https://ghuria-apps.github.io/infinity-iptv/logo-mark.png" group-title="Test Channels",Apple HLS Test (Bip Bop)
+https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8
+#EXTINF:-1 tvg-id="" tvg-logo="https://ghuria-apps.github.io/infinity-iptv/logo-mark.png" group-title="Test Channels",Mux Test Stream
+https://test-streams.mux.dev/test_001/stream.m3u8
+#EXTINF:-1 tvg-id="" tvg-logo="https://ghuria-apps.github.io/infinity-iptv/logo-mark.png" group-title="Open Movies (HLS)",Big Buck Bunny (Blender Foundation, CC BY)
+https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8
+#EXTINF:-1 tvg-id="" tvg-logo="https://ghuria-apps.github.io/infinity-iptv/logo-mark.png" group-title="Open Movies (HLS)",Tears of Steel (Blender Foundation, CC BY)
+https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8
+#EXTINF:-1 tvg-id="" tvg-logo="https://ghuria-apps.github.io/infinity-iptv/logo-mark.png" group-title="Open Movies (HLS)",Angel One (Shaka Player demo)
+https://storage.googleapis.com/shaka-demo-assets/angel-one-hls/hls.m3u8
+#EXTINF:-1 tvg-logo="https://ghuria-apps.github.io/infinity-iptv/logo-mark.png" group-title="Open Movies",Sintel - Trailer (Blender Foundation, CC BY)
+https://download.blender.org/durian/trailer/sintel_trailer-480p.mp4
+#EXTINF:-1 tvg-logo="https://ghuria-apps.github.io/infinity-iptv/logo-mark.png" group-title="Open Movies",Tears of Steel (Blender Foundation, CC BY)
+https://download.blender.org/demo/movies/ToS/tears_of_steel_720p.mov
